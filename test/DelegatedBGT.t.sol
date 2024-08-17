@@ -8,7 +8,7 @@ import {DelegateRegistry} from "delegate-registry/src/DelegateRegistry.sol";
 contract DelegatedBGTTest is Test {
     BGT bgt;
     DelegateRegistry registry;
-    //address owner = 0x8a73D1380345942F1cb32541F1b19C40D8e6C94B;
+    address owner = 0x8a73D1380345942F1cb32541F1b19C40D8e6C94B;
     address delegator = 0x9a085B397b12A2ff95759fE3a26518f934a03123;
     address validator = 0x2D764DFeaAc00390c69985631aAA7Cc3fcfaFAfF;
     address delegate;
@@ -28,8 +28,10 @@ contract DelegatedBGTTest is Test {
 
     // Overwrite BGT contract with our version and initialize `registry`
     function prepare() public {
-        // NOTE: Etch currently seems to overwrite storage too, is there a way to only upgrade code?
+        vm.roll(2995082);
+        // NOTE: Etch currently seems to possibly overwrite storage (error maybe?), is there a way to only upgrade code?
         bgt = new BGT();
+        bgt.initialize(owner);
         vm.etch(0xbDa130737BDd9618301681329bF2e46A016ff9Ad, address(bgt).code);
         bgt = BGT(0xbDa130737BDd9618301681329bF2e46A016ff9Ad);
         registry = DelegateRegistry(0x00000000000000447e69651d841bD8D104Bed493);
@@ -44,11 +46,11 @@ contract DelegatedBGTTest is Test {
     }*/
 
     function queue() public prank(delegate) {
-        bgt.queueBoost(delegator, validator, 64900877015889774);
+        bgt.queueBoost(delegator, validator, 1);
     }
 
     function cancel() public prank(delegate) {
-        bgt.cancelBoost(delegator, validator, 64900877015889774);
+        bgt.cancelBoost(delegator, validator, 1);
     }
 
     function activate() public prank(delegate) {
@@ -56,11 +58,14 @@ contract DelegatedBGTTest is Test {
     }
 
     function drop() public prank(delegate) {
-        bgt.dropBoost(delegator, validator, 64900877015889774);
+        bgt.dropBoost(delegator, validator, 1);
     }
 
     function testQueue() public {
-        vm.roll(2995082);
+        console2.log(block.number);
+        // `delegator` should have 64900877015889774 wei of unboosted balance at this block number (source: Beratrail)
+        // Why does this return 0? Is the etch overwriting the storage slots? Is RPC incompatible with foundry?
+        bgt.unboostedBalanceOf(delegator);
         queue();
     }
 
